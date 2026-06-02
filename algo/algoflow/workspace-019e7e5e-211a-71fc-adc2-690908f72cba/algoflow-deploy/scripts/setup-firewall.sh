@@ -12,7 +12,13 @@
 
 set -euo pipefail
 
-PORT=${1:-3001}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PORT_FILE="$SCRIPT_DIR/../data/server-port.txt"
+PORT=${1:-}
+if [[ -z "${PORT}" && -f "$PORT_FILE" ]]; then
+  PORT="$(tr -d '[:space:]' < "$PORT_FILE")"
+fi
+PORT=${PORT:-3001}
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'

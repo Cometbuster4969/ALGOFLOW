@@ -399,3 +399,29 @@ The verification run **succeeded** before it was stopped in the background.
 
 Use **http://127.0.0.1:3002** if 3001 is still taken by an older instance, or stop that process and restart with `npm start` to get 3001 again.
 
+---
+
+## 2026-06-02 — Deployment hardening changes
+
+- Expanded root `.gitignore` to cover nested `node_modules`, build artifacts, logs, env files, and editor/OS junk.
+- Added a root `README.md` so onboarding and launch steps are discoverable from repository root.
+- Added extension packaging workflow:
+  - `algoflow-extension/scripts/package-extension.js`
+  - `npm run pack` in `algoflow-extension/package.json`
+  - outputs zip files under `algoflow-extension/dist/` for store upload prep.
+- Added extension popup settings for:
+  - backend URL
+  - optional API key
+  - sync enable/disable toggle
+  - save action + backend status hint
+- Added missing `"alarms"` permission in extension manifest for badge-sync alarm usage.
+- Improved dynamic-port deployment behavior:
+  - `algoflow-deploy/scripts/run-tests.js` now reads `ALGOFLOW_PORT` or `data/server-port.txt` for health checks.
+  - `algoflow-deploy/scripts/setup-firewall.sh` now auto-detects port from `data/server-port.txt` (or accepts explicit port arg).
+  - `algoflow-deploy/scripts/setup-firewall.bat` now auto-detects port from `data/server-port.txt` (or accepts explicit port arg).
+- Updated docs for correctness:
+  - fixed extension folder reference in deploy README (`algoflow-extension/`)
+  - updated deploy README node requirement to `22.5+`
+  - documented firewall scripts’ dynamic port behavior
+  - updated extension README URL detection strategy count and added packaging instructions
+  - updated compiler docs to reflect firewall script behavior.

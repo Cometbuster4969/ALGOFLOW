@@ -2,11 +2,19 @@
 :: ============================================================================
 :: AlgoFlow — Windows Firewall Setup (Run as Administrator)
 :: ============================================================================
-:: Opens port 3001 for cross-device whiteboard sync.
+:: Opens the active AlgoFlow port for cross-device whiteboard sync.
 :: Right-click this file → "Run as administrator"
 :: ============================================================================
 
-set PORT=3001
+set "PORT="
+
+if not "%~1"=="" (
+    set "PORT=%~1"
+) else if exist "%~dp0..\data\server-port.txt" (
+    set /p PORT=<"%~dp0..\data\server-port.txt"
+)
+
+if "%PORT%"=="" set "PORT=3001"
 
 echo.
 echo ===================================================

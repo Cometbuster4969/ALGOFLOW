@@ -2,6 +2,7 @@
  * Run verification tests across AlgoFlow modules from the deploy root.
  */
 const { spawnSync } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 
 const root = path.join(__dirname, "..", "..");
@@ -29,17 +30,26 @@ for (const suite of suites) {
   }
 }
 
-process.stdout.write("\n▶ Unified server health (requires server running on :3001)\n");
-const http = require("http");
+const portFile = path.join(__dirname, "..", "data", "server-port.txt");
+const healthPort = (() => {
+  if (process.env.ALGOFLOW_PORT) return String(process.env.ALGOFLOW_PORT);
+  try {
+    return fs.readFileSync(portFile, "utf8").trim() || "3001";
+  } catch {
+    return "3001";
+  }
+})();
+
+process.stdout.write(`\n▶ Unified server health (requires server running on :${healthPort})\n`);
 const health = spawnSync(
-  process.platform === "win32" ? "curl" : "curl",
-  ["-sf", "http://127.0.0.1:3001/health"],
+  "curl",
+  ["-sf", `http://127.0.0.1:${healthPort}/health`],
   { stdio: "pipe", shell: true }
 );
 if (health.status === 0) {
   console.log("✓ Health check OK");
 } else {
-  console.log("○ Health check skipped (start with: npm start)");
+  console.log(`○ Health check skipped (start with: npm start, expected :${healthPort})`);
 }
 
 process.exit(failed > 0 ? 1 : 0);

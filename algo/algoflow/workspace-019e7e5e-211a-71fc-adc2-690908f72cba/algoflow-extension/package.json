@@ -4,7 +4,8 @@
   "description": "A Chrome Extension that scrapes competitive programming problems from **LeetCode** and **Codeforces**, caches them locally, and exports them to the AlgoFlow sandbox for execution.",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/run-all.js"
+    "test": "node tests/run-all.js",
+    "pack": "node scripts/package-extension.js"
   },
   "keywords": [],
   "author": "",

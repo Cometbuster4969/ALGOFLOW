@@ -22,6 +22,11 @@
     currentLabel:  $("#current-label"),
     currentDetail: $("#current-detail"),
     scrapeBtn:     $("#scrape-btn"),
+    backendUrl:    $("#backend-url"),
+    apiKey:        $("#api-key"),
+    syncEnabled:   $("#sync-enabled"),
+    saveSettingsBtn: $("#save-settings-btn"),
+    settingsStatus: $("#settings-status"),
     searchInput:   $("#search-input"),
     chipRow:       $(".af-chip-row"),
     problemList:   $("#problem-list"),
@@ -42,10 +47,16 @@
   let activeFilter = "all";
   let searchQuery = "";
   let selectedProblem = null;
+  let extensionSettings = {
+    backendUrl: "http://127.0.0.1:3001",
+    syncToBackend: true,
+    apiKey: "",
+  };
 
   // ─── Initialise ────────────────────────────────────────────────────────
 
   async function init() {
+    await loadSettings();
     await loadCachedProblems();
     await checkBackendStatus();
     detectCurrentPage();
@@ -53,16 +64,50 @@
     renderList();
   }
 
+  async function loadSettings() {
+    const result = await chrome.storage.local.get("algoflow_settings");
+    extensionSettings = {
+      backendUrl: "http://127.0.0.1:3001",
+      syncToBackend: true,
+      apiKey: "",
+      ...(result.algoflow_settings || {}),
+    };
+
+    dom.backendUrl.value = extensionSettings.backendUrl || "http://127.0.0.1:3001";
+    dom.apiKey.value = extensionSettings.apiKey || "";
+    dom.syncEnabled.checked = extensionSettings.syncToBackend !== false;
+  }
+
+  async function saveSettings() {
+    const backendUrl = (dom.backendUrl.value || "").trim().replace(/\/$/, "");
+    extensionSettings = {
+      ...extensionSettings,
+      backendUrl: backendUrl || "http://127.0.0.1:3001",
+      apiKey: (dom.apiKey.value || "").trim(),
+      syncToBackend: !!dom.syncEnabled.checked,
+    };
+
+    await chrome.storage.local.set({ algoflow_settings: extensionSettings });
+    dom.settingsStatus.textContent = "Settings saved.";
+    setTimeout(() => {
+      dom.settingsStatus.textContent = "Using saved backend settings.";
+    }, 1800);
+    await checkBackendStatus();
+  }
+
   async function checkBackendStatus() {
     try {
       const status = await chrome.runtime.sendMessage({ type: "PING_BACKEND" });
       if (status?.ok) {
         dom.problemCount.title = `AlgoFlow backend online (port ${status.port || 3001})`;
+        dom.settingsStatus.textContent = `Backend online (${status.version || "ok"})`;
       } else {
         dom.problemCount.title = "AlgoFlow backend offline — run: cd algoflow-deploy && npm start";
+        dom.settingsStatus.textContent = "Backend offline. Start algoflow-deploy and save settings if URL changed.";
       }
     } catch {
       dom.problemCount.title = "AlgoFlow backend offline — run: cd algoflow-deploy && npm start";
+      dom.settingsStatus.textContent = "Backend offline. Start algoflow-deploy and save settings if URL changed.";
     }
   }
 
@@ -399,6 +444,7 @@
     // Footer actions
     dom.exportAllBtn.addEventListener("click", exportAll);
     dom.clearAllBtn.addEventListener("click", clearAll);
+    dom.saveSettingsBtn.addEventListener("click", saveSettings);
 
     // Keyboard
     document.addEventListener("keydown", (e) => {

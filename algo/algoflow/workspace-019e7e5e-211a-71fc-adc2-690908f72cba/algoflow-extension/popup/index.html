@@ -41,6 +41,26 @@
     </button>
   </section>
 
+  <!-- ── Backend settings ─────────────────────────────────────────────── -->
+  <section class="af-section af-settings">
+    <div class="af-settings__row">
+      <label class="af-settings__label" for="backend-url">Backend URL</label>
+      <input type="text" id="backend-url" class="af-settings__input" placeholder="http://127.0.0.1:3001" />
+    </div>
+    <div class="af-settings__row">
+      <label class="af-settings__label" for="api-key">API Key (optional)</label>
+      <input type="password" id="api-key" class="af-settings__input" placeholder="x-api-key value" />
+    </div>
+    <div class="af-settings__actions">
+      <label class="af-settings__toggle">
+        <input type="checkbox" id="sync-enabled" />
+        <span>Sync to backend</span>
+      </label>
+      <button class="af-btn af-btn--sm af-btn--primary" id="save-settings-btn">Save</button>
+    </div>
+    <p class="af-settings__hint" id="settings-status">Using default backend settings.</p>
+  </section>
+
   <!-- ── Filter bar ─────────────────────────────────────────────────── -->
   <section class="af-section af-filters">
     <div class="af-search-wrap">

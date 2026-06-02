@@ -1,1 +1,34 @@
+# Node / JS
 node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build artifacts
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Runtime / temp
+tmp/
+temp/
+*.log
+*.pid
+
+# Environment / local config
+.env
+.env.*
+!.env.example
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python caches (sandbox tooling)
+__pycache__/
+*.pyc

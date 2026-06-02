@@ -8,7 +8,7 @@ Complete guide to packaging, installing, and configuring AlgoFlow on your machin
 cd algoflow-deploy
 npm install
 npm start
-# → http://127.0.0.1:3001  (dashboard, sandbox, review queue, whiteboard)
+# → open the URL printed in logs (default http://127.0.0.1:3001)
 
 # Load extension: chrome://extensions → Load unpacked → ../algoflow-extension
 # Optional desktop shell:
@@ -150,7 +150,7 @@ Or manually:
 1. Open `chrome://extensions`
 2. Enable **Developer mode** (top-right toggle)
 3. Click **Load unpacked**
-4. Select the `extension/` folder
+4. Select the `algoflow-extension/` folder
 5. The AlgoFlow icon appears in your toolbar
 
 ### How It Works
@@ -238,9 +238,11 @@ sudo firewall-cmd --reload
 scripts/setup-firewall.bat
 ```
 
-Or use the automated script:
+Or use the automated script (auto-detects active port from `data/server-port.txt`, or pass one explicitly):
 ```bash
 sudo ./scripts/setup-firewall.sh
+# or
+sudo ./scripts/setup-firewall.sh 3002
 ```
 
 ### Step 3: Set Static IP (Recommended)
@@ -311,7 +313,7 @@ curl http://192.168.1.100:3001/health
 │                    AlgoFlow Deployment Checklist                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  □  Node.js 18+ installed                                      │
+│  □  Node.js 22.5+ installed                                    │
 │  □  g++ installed and in PATH                                   │
 │  □  python3 installed and in PATH                               │
 │  □  javac installed (optional)                                  │

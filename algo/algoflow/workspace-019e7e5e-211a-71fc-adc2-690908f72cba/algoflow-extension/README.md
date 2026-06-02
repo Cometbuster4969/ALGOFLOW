@@ -76,14 +76,13 @@ A Chrome Extension that scrapes competitive programming problems from **LeetCode
 5. Data is cached to `chrome.storage.local` with a dedup key
 6. Toast notification confirms success
 
-### URL Change Detection (4 Strategies)
+### URL Change Detection (3 Strategies)
 
 | # | Strategy | Why |
 |---|----------|-----|
 | 1 | `MutationObserver` on `<title>` | Both platforms change the title on SPA nav |
 | 2 | `popstate` event | Browser back/forward |
-| 3 | Override `pushState`/`replaceState` | Catches router calls |
-| 4 | Polling (250ms) | Last resort safety net |
+| 3 | Polling (250ms) | Last resort safety net |
 
 ### Output Format
 
@@ -124,3 +123,13 @@ Each parser uses **cascading selectors** (primary → fallback → regex):
 - **Detail modal** — view test cases, copy to clipboard, send to sandbox
 - **Export All** — downloads all cached problems as JSON
 - **Clear All** — wipes `chrome.storage.local` cache
+- **Settings** — backend URL, optional API key, sync on/off
+
+## Packaging for store upload
+
+```bash
+npm install
+npm run pack
+```
+
+This writes a zip artifact to `dist/` and excludes tests, logs, and `node_modules`.

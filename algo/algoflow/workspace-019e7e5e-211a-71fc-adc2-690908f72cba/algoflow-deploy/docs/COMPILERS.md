@@ -41,5 +41,5 @@ Or run from `algoflow-deploy`:
 
 ## Firewall (tablet whiteboard sync)
 
-- **Windows:** Run `scripts\setup-firewall.bat` as Administrator (port 3001).
-- **Linux/macOS:** Run `scripts/setup-firewall.sh`.
+- **Windows:** Run `scripts\setup-firewall.bat` as Administrator (auto-detects active server port).
+- **Linux/macOS:** Run `scripts/setup-firewall.sh` (auto-detects active server port, or pass a port).
