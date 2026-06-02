@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlgoFlow</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header>
+    <h1>AlgoFlow</h1>
+    <div class="header-right">
+      <label>Profile
+        <select id="user-select"></select>
+      </label>
+      <button class="btn secondary small" id="add-user-btn">+ Profile</button>
+      <nav>
+        <a href="/whiteboard.html">Whiteboard</a>
+        <a href="/health" target="_blank">Health</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="review">Review</button>
+    <button class="tab" data-panel="sandbox">Sandbox</button>
+    <button class="tab" data-panel="templates">Templates</button>
+    <button class="tab" data-panel="problems">Problems</button>
+  </div>
+
+  <section id="panel-review" class="panel active">
+    <div class="grid">
+      <div class="card">
+        <h2>Review queue</h2>
+        <div class="stats-row" id="review-stats"></div>
+        <h2 class="text-muted mt-sm">7-day forecast</h2>
+        <div class="forecast-bar" id="forecast-chart"></div>
+        <div id="review-list" class="mt-md"></div>
+        <button class="btn secondary mt-md" id="refresh-review">Refresh</button>
+      </div>
+      <div class="card">
+        <h2>Active review</h2>
+        <p class="hint">Select a problem from the queue, then rate your recall (SM-2).</p>
+        <div id="review-focus" class="review-focus hidden">
+          <div id="review-focus-body"></div>
+          <div class="rating-row" id="rating-row"></div>
+        </div>
+        <p id="review-focus-hint" class="hint">Click a problem to start reviewing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-sandbox" class="panel">
+    <div class="card">
+      <h2>Code sandbox</h2>
+      <p class="hint">Monaco editor · Run tests · Profile complexity (static + optional benchmark runs).</p>
+      <select id="lang" aria-label="Programming language">
+        <option value="cpp">C++</option>
+        <option value="python">Python</option>
+        <option value="java">Java</option>
+      </select>
+      <div id="editor"></div>
+      <textarea id="tests" class="json-area" rows="4" placeholder='[{"input":"5\n","expected_output":""}]'>[{"input":"10\n","expected_output":""},{"input":"100\n","expected_output":""},{"input":"500\n","expected_output":""}]</textarea>
+      <button class="btn" id="run-btn">Run tests</button>
+      <button class="btn secondary" id="profile-btn">Profile complexity</button>
+      <button class="btn secondary" id="save-editor-as-tpl">Save as template</button>
+      <pre id="run-output"></pre>
+      <pre id="profiler-output"></pre>
+    </div>
+  </section>
+
+  <section id="panel-templates" class="panel">
+    <div class="grid">
+      <div class="card">
+        <h2>Template vault</h2>
+        <input type="text" id="template-search" class="w-full mb-sm" placeholder="Search name, tags, code…" />
+        <select id="template-lang-filter" aria-label="Filter templates by language">
+          <option value="">All languages</option>
+          <option value="cpp">C++</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+        </select>
+        <div id="template-list"></div>
+      </div>
+      <div class="card">
+        <h2>New template</h2>
+        <input type="text" id="new-tpl-name" class="w-full mb-sm" placeholder="Name" />
+        <select id="new-tpl-lang" aria-label="Template language">
+          <option value="cpp">C++</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+        </select>
+        <input type="text" id="new-tpl-tags" class="w-full mb-sm" placeholder="tags: io, graphs, dp" />
+        <textarea id="new-tpl-body" class="json-area" rows="12" placeholder="Template source…"></textarea>
+        <button class="btn" id="save-template-btn">Save template</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-problems" class="panel">
+    <div class="card">
+      <h2>Imported problems</h2>
+      <p class="hint">Synced from the Chrome extension into spaced repetition.</p>
+      <ul id="problem-list" class="list-plain"></ul>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

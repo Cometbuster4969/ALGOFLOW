@@ -1,0 +1,56 @@
+{
+  "name": "algoflow",
+  "version": "1.0.0",
+  "description": "AlgoFlow — Unified CP & DSA desktop backend",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "node scripts/preflight.js && node server/index.js",
+    "preflight": "node scripts/preflight.js",
+    "dev": "node scripts/preflight.js && node server/index.js",
+    "electron": "electron electron/main.js --dev",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "test": "node scripts/run-tests.js",
+    "postinstall": "node scripts/generate-icons.js"
+  },
+  "build": {
+    "appId": "com.algoflow.desktop",
+    "productName": "AlgoFlow",
+    "directories": { "output": "dist" },
+    "files": [
+      "electron/**/*",
+      "server/**/*",
+      "socket/**/*",
+      "public/**/*",
+      "scripts/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "server", "to": "server" },
+      { "from": "socket", "to": "socket" },
+      { "from": "public", "to": "public" },
+      { "from": "scripts/", "to": "scripts/" }
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }]
+    },
+    "mac": { "target": ["dmg", "zip"], "category": "public.app-category.developer-tools" },
+    "linux": { "target": ["AppImage", "deb"], "category": "Development" }
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
+    "express-validator": "^7.3.2",
+    "fs-extra": "^11.2.0",
+    "socket.io": "^4.7.4",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1"
+  },
+  "engines": { "node": ">=22.5.0" }
+}

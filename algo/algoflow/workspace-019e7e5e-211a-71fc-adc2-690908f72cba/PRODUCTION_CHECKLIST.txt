@@ -1,0 +1,260 @@
+================================================================================
+ALGOFLOW — PRODUCTION READINESS CHECKLIST
+================================================================================
+Use this as your step-by-step guide. Items are ordered roughly by priority.
+Check off each line as you complete it.
+
+Current state: MVP runs locally (unified server + extension + dashboard).
+"Production ready" here means: signed installers, store distribution, secure
+defaults, tested releases, and documented user setup — not necessarily cloud SaaS.
+
+================================================================================
+PHASE 1 — VERIFY LOCAL BUILD (DO THIS FIRST)
+================================================================================
+
+[ ] Install Node.js 22.5 or newer (24.x is fine)
+      Download: https://nodejs.org/
+
+[ ] Install compilers on YOUR machine (required for code sandbox)
+      See: algoflow-deploy/docs/COMPILERS.md
+      Windows: g++ (MSYS2/MinGW) + Python on PATH
+      Verify:  g++ --version
+                python --version   (or python3 on Mac/Linux)
+
+[ ] First-time project setup
+      cd algoflow-deploy
+      npm install
+      npm run preflight          (should print "Preflight OK")
+
+[ ] Start the server
+      npm start
+      Open the URL printed in the terminal (usually http://127.0.0.1:3001)
+      If port 3001 is busy, server uses 3002–3010 automatically
+
+[ ] Confirm health endpoint
+      Browser or PowerShell:
+      http://127.0.0.1:3001/health
+      Should return: "status": "ok"
+
+[ ] Test core flows manually
+      - Dashboard: import a problem, see review queue
+      - Whiteboard: open /whiteboard.html, draw, test from another device on LAN
+      - Sandbox: run simple C++ or Python on dashboard
+      - Extension: load unpacked in chrome://extensions → scrape a LeetCode problem
+
+[ ] Load browser extension (dev mode)
+      chrome://extensions → Developer mode ON
+      Load unpacked → select folder: algoflow-extension/
+      Visit a LeetCode/Codeforces problem → Export to AlgoFlow
+      Confirm problem appears on dashboard after sync
+
+[ ] Run automated tests (optional but recommended)
+      cd algoflow-srs && node tests/sm2-verify.js
+      cd algoflow-extension && npm install && npm test
+      cd algoflow-deploy && npm test
+
+[ ] Stop duplicate servers if you see port conflicts
+      Only one "npm start" at a time, or note which port is in use
+
+================================================================================
+PHASE 2 — WINDOWS DESKTOP INSTALLER
+================================================================================
+
+[ ] Build the Electron app locally
+      cd algoflow-deploy
+      npm run build:win
+      Output: algoflow-deploy/dist/
+
+[ ] Install and test the generated .exe on a CLEAN machine (or VM)
+      - App window opens
+      - Backend starts (dashboard loads)
+      - Whiteboard sync works
+      - Code execution works (compilers installed on that machine)
+      - Data persists in user AppData after restart
+
+[ ] Fix any electron-builder errors (paths, missing modules, crash on launch)
+      Common: better-sqlite3 is removed — uses node:sqlite inside Electron fork
+      Test packaged app separately from "npm start"
+
+[ ] Replace placeholder icons
+      Current: scripts/generate-icons.js creates minimal PNGs
+      Replace files in:
+        algoflow-extension/icons/     (icon16, icon48, icon128)
+        algoflow-deploy/electron/icons/ (icon.png, tray-icon.png, .ico for Windows)
+
+[ ] Code signing (Windows) — REQUIRED for public distribution without scary warnings
+      Purchase/obtain an Authenticode certificate
+      Configure electron-builder with certificate path in package.json "build.win"
+      Sign the installer and the .exe
+
+[ ] Create a simple installer README for end users
+      - Node NOT required if using .exe (only if running from source)
+      - Compilers must be installed separately
+      - Link to COMPILERS.md
+
+================================================================================
+PHASE 3 — SECURITY & NETWORK (BEFORE SHARING ON LAN OR INTERNET)
+================================================================================
+
+[ ] Set an API key if others can reach your PC on the network
+      set ALGOFLOW_API_KEY=your-long-random-secret
+      Extension: add same value in algoflow_settings.apiKey (chrome.storage)
+      Or document for users in a settings UI (not built yet — manual for now)
+
+[ ] Windows firewall for tablet/phone whiteboard sync
+      Run as Administrator: algoflow-deploy\scripts\setup-firewall.bat
+      Note the port (default 3001, or check data/server-port.txt)
+
+[ ] Router: assign static IP to your laptop (recommended for tablet sync)
+      Configure tablet browser: http://YOUR_LAPTOP_IP:PORT/whiteboard.html
+
+[ ] Do NOT expose port 3001 to the public internet without:
+      - HTTPS (reverse proxy + TLS certificate)
+      - Strong authentication (not just x-user-id: 1)
+      - Hardened sandbox (Linux VM or Docker recommended for untrusted code)
+
+[ ] Review sandbox risk
+      Users run arbitrary code with local compilers — OK for personal use
+      NOT OK as a multi-tenant public web service without isolation (Docker/VM)
+
+================================================================================
+PHASE 4 — CHROME WEB STORE (EXTENSION DISTRIBUTION)
+================================================================================
+
+[ ] Create Chrome Web Store developer account ($5 one-time fee)
+      https://chrome.google.com/webstore/devconsole
+
+[ ] Prepare store assets
+      - 128x128 icon (real design, not placeholder)
+      - Screenshots (popup, export button on LeetCode)
+      - Short and long description
+      - Privacy policy URL (required — explain local storage + localhost sync)
+
+[ ] Update manifest for production
+      - Version bump
+      - Minimum Chrome version
+      - Justify host_permissions (leetcode.com, codeforces.com, 127.0.0.1)
+
+[ ] Zip extension for upload (exclude node_modules, tests if not needed)
+      Folder: algoflow-extension/
+
+[ ] Submit for review (typically 1–3 business days)
+
+[ ] After approval: users still need AlgoFlow desktop/server running locally
+      Document clearly: extension + local app work together
+
+================================================================================
+PHASE 5 — macOS / LINUX (IF YOU SHIP CROSS-PLATFORM)
+================================================================================
+
+[ ] macOS build:  npm run build:mac
+[ ] Apple Developer account ($99/year) for notarization
+[ ] Notarize and staple the .dmg (required on modern macOS)
+[ ] Linux build: npm run build:linux (AppImage / .deb)
+[ ] Test compiler detection on each OS
+
+================================================================================
+PHASE 6 — RELEASE ENGINEERING & CI
+================================================================================
+
+[ ] Confirm GitHub Actions CI passes
+      File: .github/workflows/algoflow-ci.yml
+      Runs on push: preflight, SM-2 tests, extension security, health check
+
+[ ] Tag releases in git (e.g. v1.0.0)
+
+[ ] Publish release artifacts
+      - Windows: AlgoFlow Setup.exe + portable .exe
+      - Attach COMPILERS.md and quick-start PDF or TXT
+
+[ ] Optional: auto-update (electron-updater)
+      Requires signed builds + update server (GitHub Releases is common)
+
+[ ] Changelog for each release
+
+================================================================================
+PHASE 7 — PRODUCT GAPS (ORIGINAL VISION — NOT BLOCKING "LOCAL PROD" BUT
+           BLOCKING "FULL FEATURE" LAUNCH)
+================================================================================
+
+These are NOT done in the codebase yet. Ship without them only if your
+definition of "production" is the current MVP feature set.
+
+[ ] C++ template manager (searchable boilerplate vault)
+[ ] Big-O complexity profiler (time/memory estimation beyond TLE/MLE)
+[ ] Monaco code editor in dashboard
+[ ] Full React review UI (replace simple HTML dashboard)
+[ ] Multi-user accounts (login, per-user SQLite or Postgres)
+[ ] Hosted/cloud backend (if you want sync without local server)
+[ ] Extension resilience when LeetCode/Codeforces change their HTML
+      - Re-run: cd algoflow-extension && npm test after site changes
+      - Update selectors in content/parsers.js
+
+================================================================================
+PHASE 8 — LEGAL & SUPPORT (OFTEN OVERLOOKED)
+================================================================================
+
+[ ] Choose a license for the project (MIT, GPL, proprietary, etc.)
+
+[ ] Privacy policy (especially for Chrome Web Store)
+      - What data is stored (local SQLite, chrome.storage.local)
+      - No data sent to third parties (unless you add analytics later)
+
+[ ] Terms of use (optional, recommended if distributing binaries)
+
+[ ] Support channel (GitHub Issues, Discord, email)
+
+[ ] Security disclosure process (how to report vulnerabilities)
+
+================================================================================
+QUICK REFERENCE — COMMANDS
+================================================================================
+
+  cd algoflow-deploy
+  npm install
+  npm start                          # local server
+  npm run electron                   # desktop dev shell
+  npm run build:win                  # Windows installer
+  scripts\first-run-setup.bat        # Windows first-time helper
+  scripts\setup-firewall.bat         # Admin — LAN whiteboard port
+
+  Extension: chrome://extensions → Load unpacked → algoflow-extension/
+
+  Optional LAN API key:
+  set ALGOFLOW_API_KEY=your-secret
+  npm start
+
+================================================================================
+MINIMUM BAR FOR "PERSONAL PRODUCTION" (JUST YOU + FRIENDS)
+================================================================================
+
+  Done when:
+  [x] npm start works reliably
+  [ ] Extension syncs problems to backend
+  [ ] Compilers documented and working
+  [ ] build:win tested on another PC
+  [ ] Firewall configured for tablet sync (if using whiteboard across devices)
+
+================================================================================
+MINIMUM BAR FOR "PUBLIC PRODUCTION" (STRANGERS DOWNLOAD & TRUST)
+================================================================================
+
+  Everything above PLUS:
+  [ ] Code-signed Windows installer (and macOS notarization if applicable)
+  [ ] Real icons and professional store listing
+  [ ] Chrome Web Store published extension
+  [ ] Privacy policy + support docs
+  [ ] Security review if exposing beyond localhost
+
+================================================================================
+FILES TO READ IN THIS REPO
+================================================================================
+
+  algoflow-deploy/MVP.md                 — what is integrated today
+  algoflow-deploy/DEPLOYMENT_REMAINING.md — technical remaining items
+  algoflow-deploy/docs/COMPILERS.md      — compiler install guide
+  algoflow-deploy/README.md              — full deployment guide
+
+================================================================================
+END OF CHECKLIST
+================================================================================

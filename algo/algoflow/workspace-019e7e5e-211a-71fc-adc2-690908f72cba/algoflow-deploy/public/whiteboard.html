@@ -1,0 +1,340 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlgoFlow Whiteboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, sans-serif; background: #0f1117; color: #e4e6eb; overflow: hidden; height: 100vh; }
+
+    /* Toolbar */
+    .toolbar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: #161922; border: 1px solid #2a2d3a; border-radius: 10px; padding: 6px 10px; z-index: 100; }
+    .toolbar button { width: 36px; height: 36px; border: none; border-radius: 6px; background: transparent; color: #8b8fa3; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .toolbar button:hover { background: #1c2030; color: #e4e6eb; }
+    .toolbar button.active { background: #6366f1; color: #fff; }
+    .toolbar .sep { width: 1px; height: 24px; background: #2a2d3a; margin: 6px 4px; }
+
+    /* Color picker */
+    .color-pick { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #2a2d3a; cursor: pointer; margin: 6px 2px; }
+
+    /* Status bar */
+    .status { position: fixed; bottom: 8px; left: 12px; font-size: 11px; color: #8b8fa3; z-index: 100; display: flex; gap: 16px; }
+    .status span { opacity: 0.7; }
+
+    /* Canvas */
+    canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar" id="toolbar">
+    <button data-tool="select" title="Select (V)">â†–</button>
+    <button data-tool="node" title="Node (N)">â—</button>
+    <button data-tool="edge" title="Edge (E)">â†—</button>
+    <button data-tool="text" title="Text (T)">T</button>
+    <button data-tool="pan" title="Pan (Space)">âœ‹</button>
+    <button data-tool="eraser" title="Eraser (X)">âœ•</button>
+    <div class="sep"></div>
+    <button id="undo-btn" title="Undo (Ctrl+Z)">â†©</button>
+    <button id="redo-btn" title="Redo (Ctrl+Shift+Z)">â†ª</button>
+    <div class="sep"></div>
+    <input type="color" class="color-pick" id="color-pick" value="#6366f1" />
+    <div class="sep"></div>
+    <button id="template-tree" title="Binary Tree">ðŸŒ³</button>
+    <button id="template-graph" title="Weighted Graph">â¬¡</button>
+  </div>
+
+  <canvas id="whiteboard"></canvas>
+
+  <div class="status">
+    <span id="status-room">Room: â€”</span>
+    <span id="status-shapes">Shapes: 0</span>
+    <span id="status-users">Users: 1</span>
+    <span id="status-fps">FPS: â€”</span>
+    <span id="status-zoom">Zoom: 100%</span>
+  </div>
+
+  <!-- Compiled JS (in real build: Vite/esbuild output) -->
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" crossorigin="anonymous"></script>`n  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // â”€â”€ Inline boot script (compiled from TS modules in production) â”€â”€
+
+    const SERVER = window.location.origin;
+    const ROOM = new URLSearchParams(window.location.search).get("room") || "default";
+    const USER = "User-" + Math.random().toString(36).slice(2, 6);
+
+    // Socket connection
+    const socket = (typeof io !== "undefined") ? io(SERVER, { transports: ["websocket"] }) : createDummySocket();
+    function createDummySocket() { return { emit: () => {}, on: () => {}, off: () => {}, connected: false }; }
+    if (typeof io === "undefined") console.warn("Socket.IO client unavailable; whiteboard running in offline mode.");
+    const canvas = document.getElementById("whiteboard");
+
+    // State
+    const shapes = new Map();
+    const selection = new Set();
+    const remoteCursors = new Map();
+    let activeTool = "node";
+    let activeColor = "#6366f1";
+    let viewport = { offsetX: 0, offsetY: 0, zoom: 1 };
+    let edgeSourceId = null;
+    let tempShape = null;
+
+    // Throttled buffers
+    const cursorBuf = { x: 0, y: 0, dirty: false };
+    const drawBuf = new Map();
+    let drawDirty = false;
+
+    setInterval(() => {
+      if (cursorBuf.dirty) {
+        socket.emit("cursor-move", cursorBuf);
+        cursorBuf.dirty = false;
+      }
+      if (drawDirty) {
+        for (const [key, evt] of drawBuf) {
+          socket.emit("draw-event", evt);
+        }
+        drawBuf.clear();
+        drawDirty = false;
+      }
+    }, 16);
+
+    // Join room
+    socket.emit("room-join", { roomId: ROOM, user: { name: USER } });
+
+    socket.on("room-state", (state) => {
+      shapes.clear();
+      for (const s of state.shapes) shapes.set(s.id, s);
+      updateStatus();
+    });
+
+    socket.on("draw-event", (evt) => {
+      if (evt.action === "add" && evt.shape) shapes.set(evt.shape.id, evt.shape);
+      else if (evt.action === "update" && evt.shapeId && evt.patch) {
+        const s = shapes.get(evt.shapeId);
+        if (s) Object.assign(s, evt.patch);
+      }
+      else if (evt.action === "delete" && evt.shapeId) shapes.delete(evt.shapeId);
+    });
+
+    socket.on("cursor-move", (data) => {
+      remoteCursors.set(data.socketId, { ...data, lastSeen: Date.now() });
+    });
+
+    socket.on("client-left", (d) => remoteCursors.delete(d.socketId));
+
+    // Canvas setup
+    const dpr = window.devicePixelRatio || 1;
+    function resize() {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width * dpr;
+      canvas.height = r.height * dpr;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Coordinate helpers
+    function s2w(sx, sy) {
+      return { x: (sx - viewport.offsetX) / viewport.zoom, y: (sy - viewport.offsetY) / viewport.zoom };
+    }
+    function w2s(wx, wy) {
+      return { x: wx * viewport.zoom + viewport.offsetX, y: wy * viewport.zoom + viewport.offsetY };
+    }
+    function snap(p) {
+      const s = 20;
+      return { x: Math.round(p.x / s) * s, y: Math.round(p.y / s) * s };
+    }
+
+    // Mouse events
+    let dragging = false, dragStart = null, dragShapeStarts = new Map();
+    let panning = false, panStart = null;
+
+    canvas.addEventListener("mousedown", (e) => {
+      const r = canvas.getBoundingClientRect();
+      const w = s2w(e.clientX - r.left, e.clientY - r.top);
+
+      if (e.button === 1 || activeTool === "pan") { panning = true; panStart = { x: e.clientX, y: e.clientY }; return; }
+      if (e.button !== 0) return;
+
+      if (activeTool === "select") {
+        const hit = hitTest(w.x, w.y);
+        if (hit) {
+          selection.clear(); selection.add(hit.id);
+          dragging = true; dragStart = { ...w };
+          dragShapeStarts.set(hit.id, { x: hit.x, y: hit.y });
+        } else { selection.clear(); }
+      }
+      else if (activeTool === "node") {
+        const sp = snap(w);
+        const node = { id: crypto.randomUUID(), type: "node", x: sp.x - 25, y: sp.y - 25, width: 50, height: 50, radius: 25, fill: activeColor, stroke: activeColor, strokeWidth: 2, label: "", shape: "circle", fontSize: 14, locked: false, lockedBy: null, zIndex: shapes.size, createdAt: Date.now(), updatedAt: Date.now() };
+        shapes.set(node.id, node);
+        drawBuf.set(node.id, { action: "add", shape: node }); drawDirty = true;
+      }
+      else if (activeTool === "edge") {
+        const hit = hitTest(w.x, w.y);
+        if (hit && hit.type === "node") { edgeSourceId = hit.id; tempShape = { id: "temp", type: "edge", sourceId: hit.id, sourceAnchor: { x: hit.x + 25, y: hit.y + 25 }, targetAnchor: { ...w }, stroke: activeColor, strokeWidth: 2, directed: true }; }
+      }
+      else if (activeTool === "eraser") {
+        const hit = hitTest(w.x, w.y);
+        if (hit) { shapes.delete(hit.id); drawBuf.set(hit.id, { action: "delete", shapeId: hit.id }); drawDirty = true; }
+      }
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      const r = canvas.getBoundingClientRect();
+      const w = s2w(e.clientX - r.left, e.clientY - r.top);
+      cursorBuf.x = w.x; cursorBuf.y = w.y; cursorBuf.dirty = true;
+
+      if (panning && panStart) { viewport.offsetX += e.clientX - panStart.x; viewport.offsetY += e.clientY - panStart.y; panStart = { x: e.clientX, y: e.clientY }; return; }
+      if (dragging && dragStart) {
+        const dx = w.x - dragStart.x, dy = w.y - dragStart.y;
+        for (const id of selection) {
+          const sp = dragShapeStarts.get(id), s = shapes.get(id);
+          if (sp && s) { s.x = sp.x + dx; s.y = sp.y + dy; s.updatedAt = Date.now(); drawBuf.set(id, { action: "update", shapeId: id, patch: { x: s.x, y: s.y } }); drawDirty = true; updateConnectedEdges(id); }
+        }
+      }
+      if (activeTool === "edge" && tempShape) tempShape.targetAnchor = snap(w);
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      panning = false; panStart = null;
+      if (dragging) { dragging = false; dragStart = null; dragShapeStarts.clear(); return; }
+      if (activeTool === "edge" && edgeSourceId && tempShape) {
+        const hit = hitTest(tempShape.targetAnchor.x, tempShape.targetAnchor.y);
+        if (hit && hit.type === "node" && hit.id !== edgeSourceId) {
+          const edge = { id: crypto.randomUUID(), type: "edge", x: 0, y: 0, width: 0, height: 0, sourceId: edgeSourceId, targetId: hit.id, sourceAnchor: tempShape.sourceAnchor, targetAnchor: { x: hit.x + 25, y: hit.y + 25 }, weight: "", directed: true, style: "solid", fill: activeColor, stroke: activeColor, strokeWidth: 2, locked: false, lockedBy: null, zIndex: shapes.size + 1, createdAt: Date.now(), updatedAt: Date.now() };
+          shapes.set(edge.id, edge); drawBuf.set(edge.id, { action: "add", shape: edge }); drawDirty = true;
+        }
+        tempShape = null; edgeSourceId = null;
+      }
+    });
+
+    canvas.addEventListener("wheel", (e) => { e.preventDefault(); const r = canvas.getBoundingClientRect(); const f = e.deltaY < 0 ? 1.1 : 0.9; const oldZ = viewport.zoom; viewport.zoom = Math.min(5, Math.max(0.1, oldZ * f)); const rat = viewport.zoom / oldZ; viewport.offsetX = (e.clientX - r.left) - ((e.clientX - r.left) - viewport.offsetX) * rat; viewport.offsetY = (e.clientY - r.top) - ((e.clientY - r.top) - viewport.offsetY) * rat; }, { passive: false });
+
+    function updateConnectedEdges(nodeId) {
+      const node = shapes.get(nodeId); if (!node) return;
+      for (const s of shapes.values()) {
+        if (s.type !== "edge") continue;
+        if (s.sourceId === nodeId) { s.sourceAnchor = { x: node.x + 25, y: node.y + 25 }; drawBuf.set(s.id, { action: "update", shapeId: s.id, patch: { sourceAnchor: s.sourceAnchor } }); drawDirty = true; }
+        if (s.targetId === nodeId) { s.targetAnchor = { x: node.x + 25, y: node.y + 25 }; drawBuf.set(s.id, { action: "update", shapeId: s.id, patch: { targetAnchor: s.targetAnchor } }); drawDirty = true; }
+      }
+    }
+
+    function hitTest(wx, wy) {
+      const sorted = Array.from(shapes.values()).sort((a, b) => b.zIndex - a.zIndex);
+      for (const s of sorted) {
+        if (s.type === "edge") continue;
+        if (wx >= s.x && wx <= s.x + s.width && wy >= s.y && wy <= s.y + s.height) return s;
+      }
+      return null;
+    }
+
+    // Keyboard
+    document.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT") return;
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); socket.emit("undo"); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) { e.preventDefault(); socket.emit("redo"); }
+      if (e.key === "Delete" || e.key === "Backspace") { for (const id of selection) { shapes.delete(id); drawBuf.set(id, { action: "delete", shapeId: id }); drawDirty = true; } selection.clear(); }
+      if (e.key === "Escape") { selection.clear(); tempShape = null; edgeSourceId = null; }
+      if (e.key === "v") setTool("select"); if (e.key === "n") setTool("node"); if (e.key === "e") setTool("edge"); if (e.key === "x") setTool("eraser");
+    });
+
+    // Toolbar
+    function setTool(t) { activeTool = t; document.querySelectorAll("[data-tool]").forEach(b => b.classList.toggle("active", b.dataset.tool === t)); canvas.style.cursor = t === "pan" ? "grab" : t === "select" ? "default" : "crosshair"; }
+    document.querySelectorAll("[data-tool]").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
+    document.getElementById("color-pick").addEventListener("input", (e) => activeColor = e.target.value);
+    document.getElementById("undo-btn").addEventListener("click", () => socket.emit("undo"));
+    document.getElementById("redo-btn").addEventListener("click", () => socket.emit("redo"));
+    setTool("node");
+    setTool("node");
+
+    // Render loop
+    let frames = 0, lastFps = Date.now();
+    function render() {
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+      ctx.save();
+      ctx.translate(viewport.offsetX, viewport.offsetY);
+      ctx.scale(viewport.zoom, viewport.zoom);
+
+      // Grid
+      drawGrid(ctx);
+
+      // Shapes
+      const sorted = Array.from(shapes.values()).sort((a, b) => a.zIndex - b.zIndex);
+      for (const s of sorted) drawShape(ctx, s, selection.has(s.id));
+      if (tempShape) drawShape(ctx, tempShape, false);
+
+      ctx.restore();
+
+      // Cursors
+      drawCursors(ctx);
+
+      frames++;
+      if (Date.now() - lastFps > 1000) {
+        document.getElementById("status-fps").textContent = "FPS: " + frames;
+        frames = 0; lastFps = Date.now();
+      }
+      document.getElementById("status-shapes").textContent = "Shapes: " + shapes.size;
+      document.getElementById("status-zoom").textContent = "Zoom: " + Math.round(viewport.zoom * 100) + "%";
+
+      requestAnimationFrame(render);
+    }
+    render();
+
+    function drawGrid(ctx) {
+      const s = 20;
+      const tl = s2w(0, 0), br = s2w(canvas.width / dpr, canvas.height / dpr);
+      ctx.fillStyle = "rgba(99,102,241,0.25)";
+      for (let x = Math.floor(tl.x / s) * s; x <= br.x; x += s) {
+        for (let y = Math.floor(tl.y / s) * s; y <= br.y; y += s) {
+          ctx.beginPath(); ctx.arc(x, y, Math.max(1, 1.5 / viewport.zoom), 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
+
+    function drawShape(ctx, s, sel) {
+      if (s.type === "node") drawNode(ctx, s, sel);
+      else if (s.type === "edge") drawEdge(ctx, s, sel);
+    }
+
+    function drawNode(ctx, n, sel) {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(n.x + 25, n.y + 25, 25, 0, Math.PI * 2);
+      ctx.fillStyle = n.fill; ctx.fill();
+      ctx.strokeStyle = sel ? "#6366f1" : n.stroke; ctx.lineWidth = sel ? 2.5 : 2; ctx.stroke();
+      if (n.label) { ctx.fillStyle = "#fff"; ctx.font = "14px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(n.label, n.x + 25, n.y + 25); }
+      ctx.restore();
+    }
+
+    function drawEdge(ctx, e, sel) {
+      ctx.save(); ctx.beginPath(); ctx.moveTo(e.sourceAnchor.x, e.sourceAnchor.y); ctx.lineTo(e.targetAnchor.x, e.targetAnchor.y);
+      ctx.strokeStyle = sel ? "#6366f1" : (e.stroke || "#64748b"); ctx.lineWidth = sel ? 2.5 : 2; ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawCursors(ctx) {
+      for (const [id, c] of remoteCursors) {
+        if (Date.now() - c.lastSeen > 10000) continue;
+        const s = w2s(c.x, c.y);
+        ctx.save(); ctx.fillStyle = c.color || "#ec4899";
+        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + 14, s.y + 10); ctx.lineTo(s.x + 5, s.y + 10); ctx.closePath(); ctx.fill();
+        ctx.font = "11px sans-serif"; ctx.fillText(c.name || id, s.x + 16, s.y + 12);
+        ctx.restore();
+      }
+    }
+
+    // Status
+    document.getElementById("status-room").textContent = "Room: " + ROOM;
+    document.getElementById("status-users").textContent = "User: " + USER;
+
+    socket.on("client-joined", () => updateStatus());
+    socket.on("client-left", () => updateStatus());
+    function updateStatus() { /* count from room state */ }
+  </script>
+</body>
+</html>
+

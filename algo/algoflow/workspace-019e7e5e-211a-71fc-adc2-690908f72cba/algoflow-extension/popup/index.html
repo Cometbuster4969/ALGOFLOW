@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlgoFlow</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <header class="af-header">
+    <div class="af-header__brand">
+      <svg class="af-header__logo" width="22" height="22" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="16 18 22 12 16 6" />
+        <polyline points="8 6 2 12 8 18" />
+      </svg>
+      <h1 class="af-header__title">AlgoFlow</h1>
+    </div>
+    <span class="af-header__count" id="problem-count">0 saved</span>
+  </header>
+
+  <!-- ── Current page status ────────────────────────────────────────── -->
+  <section class="af-section af-current" id="current-section">
+    <div class="af-current__icon" id="current-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    </div>
+    <div class="af-current__text">
+      <p class="af-current__label" id="current-label">Checking current page…</p>
+      <p class="af-current__detail" id="current-detail"></p>
+    </div>
+    <button class="af-btn af-btn--sm af-btn--primary" id="scrape-btn" disabled>
+      Scrape
+    </button>
+  </section>
+
+  <!-- ── Filter bar ─────────────────────────────────────────────────── -->
+  <section class="af-section af-filters">
+    <div class="af-search-wrap">
+      <svg class="af-search-icon" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input type="text" id="search-input" class="af-search"
+             placeholder="Search problems…" autocomplete="off" />
+    </div>
+    <div class="af-chip-row">
+      <button class="af-chip af-chip--active" data-filter="all">All</button>
+      <button class="af-chip" data-filter="leetcode">LeetCode</button>
+      <button class="af-chip" data-filter="codeforces">Codeforces</button>
+      <button class="af-chip" data-filter="Easy">Easy</button>
+      <button class="af-chip" data-filter="Med">Med</button>
+      <button class="af-chip" data-filter="Hard">Hard</button>
+    </div>
+  </section>
+
+  <!-- ── Problem list ───────────────────────────────────────────────── -->
+  <main class="af-list" id="problem-list">
+    <div class="af-empty" id="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" opacity="0.3">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+      </svg>
+      <p>No problems scraped yet.</p>
+      <p class="af-empty__hint">Visit a LeetCode or Codeforces problem and click <strong>Export to AlgoFlow</strong>.</p>
+    </div>
+  </main>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────── -->
+  <footer class="af-footer">
+    <button class="af-btn af-btn--ghost af-btn--sm" id="export-all-btn">
+      Export All (JSON)
+    </button>
+    <button class="af-btn af-btn--ghost af-btn--sm af-btn--danger" id="clear-all-btn">
+      Clear All
+    </button>
+  </footer>
+
+  <!-- ── Detail modal (hidden) ──────────────────────────────────────── -->
+  <div class="af-modal-overlay" id="modal-overlay">
+    <div class="af-modal" id="detail-modal">
+      <div class="af-modal__header">
+        <h2 class="af-modal__title" id="modal-title"></h2>
+        <button class="af-modal__close" id="modal-close">×</button>
+      </div>
+      <div class="af-modal__body" id="modal-body"></div>
+      <div class="af-modal__footer">
+        <button class="af-btn af-btn--ghost af-btn--sm" id="modal-copy-btn">
+          Copy Test Cases
+        </button>
+        <button class="af-btn af-btn--primary af-btn--sm" id="modal-send-btn">
+          Sync to AlgoFlow
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

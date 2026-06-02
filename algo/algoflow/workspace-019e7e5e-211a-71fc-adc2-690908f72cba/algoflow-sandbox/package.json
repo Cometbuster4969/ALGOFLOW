@@ -1,0 +1,24 @@
+{
+  "name": "algoflow-sandbox",
+  "version": "1.0.0",
+  "description": "AlgoFlow — Secure execution sandbox for competitive programming",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node tests/run-all.js",
+    "test:mle": "node tests/test-mle.js",
+    "test:tle": "node tests/test-tle.js",
+    "test:injection": "node tests/test-injection.js",
+    "test:batch": "node tests/test-batch.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
+    "express-validator": "^7.3.2",
+    "fs-extra": "^11.2.0",
+    "uuid": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

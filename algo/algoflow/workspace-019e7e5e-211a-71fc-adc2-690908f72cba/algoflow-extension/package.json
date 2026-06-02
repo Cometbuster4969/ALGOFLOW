@@ -1,0 +1,15 @@
+{
+  "name": "algoflow-extension",
+  "version": "1.0.0",
+  "description": "A Chrome Extension that scrapes competitive programming problems from **LeetCode** and **Codeforces**, caches them locally, and exports them to the AlgoFlow sandbox for execution.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node tests/run-all.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

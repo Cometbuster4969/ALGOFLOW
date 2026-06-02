@@ -1,0 +1,5 @@
+{
+  "name": "algoflow-electron-shell",
+  "private": true,
+  "description": "Use the parent algoflow-deploy/package.json — run npm install && npm run electron from algoflow-deploy/"
+}

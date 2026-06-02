@@ -1,0 +1,28 @@
+{
+  "_comment": "AlgoFlow — Cross-Device Sync Configuration",
+  "_docs": "https://algoflow.dev/docs/network-sync",
+
+  "whiteboard": {
+    "server_url": "ws://192.168.1.100:3001",
+    "reconnect_interval_ms": 3000,
+    "max_reconnect_attempts": 20,
+    "connection_timeout_ms": 5000,
+    "heartbeat_interval_ms": 10000,
+    "auto_discover": true,
+    "discovery_port": 3002,
+    "discovery_message": "ALGOFLOW_DISCOVER_V1"
+  },
+
+  "sandbox": {
+    "server_url": "http://127.0.0.1:3001",
+    "timeout_ms": 30000
+  },
+
+  "notes": {
+    "how_to_find_ip": "On the laptop, run: ipconfig (Windows) or ifconfig (Mac/Linux) and look for the IPv4 address.",
+    "static_ip": "To prevent IP changes, set a static DHCP reservation in your router for the laptop's MAC address.",
+    "firewall": "Run the setup-firewall script to open port 3001.",
+    "same_network": "Both devices must be on the same Wi-Fi network (or same VLAN).",
+    "hostname_alternative": "If mDNS works on your network, you can use 'algoflow.local' instead of the IP address."
+  }
+}

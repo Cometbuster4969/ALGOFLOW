@@ -1,0 +1,39 @@
+name: AlgoFlow CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Preflight
+        working-directory: algoflow-deploy
+        run: node scripts/preflight.js
+
+      - name: SRS SM-2 tests
+        working-directory: algoflow-srs
+        run: node tests/sm2-verify.js
+
+      - name: Extension security tests
+        working-directory: algoflow-extension
+        run: npm install && node tests/05-background-security.js
+
+      - name: Install deploy deps
+        working-directory: algoflow-deploy
+        run: npm install
+
+      - name: Start server and health check
+        working-directory: algoflow-deploy
+        run: |
+          node server/index.js &
+          sleep 3
+          curl -sf http://127.0.0.1:3001/health | grep -q '"status":"ok"'

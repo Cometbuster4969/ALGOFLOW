@@ -1,0 +1,38 @@
+================================================================================
+ALGOFLOW: A UNIFIED CP & DSA STRATEGIST
+App Idea & Development Pointers
+================================================================================
+
+APP IDEA OVERVIEW
+-----------------
+AlgoFlow is designed to tackle the chaos of competitive programming and algorithmic preparation by acting as a personal command center. It focuses on pattern retention, execution speed, and seamless workflow between devices.
+
+Core Features:
+1. Pattern-Based Spaced Repetition: Categorizes solved problems by their underlying DSA pattern and utilizes a spaced repetition algorithm to schedule reviews of weakest patterns.
+2. Dynamic C++ Template Manager: A rapid-access, searchable vault for pre-written boilerplate, fast I/O templates, and custom macros for instant deployment.
+3. Cross-Device Whiteboarding: A built-in digital scratchpad that syncs seamlessly between a tablet and a primary laptop for sketching memory allocation, graph traversals, or logic flowcharts.
+4. Complexity Profiler: A localized sandbox that runs code and estimates Big-O time and memory complexity before submitting to a live judge.
+
+IMPORTANT DEVELOPMENT POINTERS
+------------------------------
+1. Cross-Device Architecture & Syncing
+   - WebSockets for Real-Time Sync: Use WebSockets (Socket.io/Fastify) for sub-100ms latency whiteboard syncing.
+   - Cross-Platform Framework: Build frontend using React (with Electron) or Flutter for identical UI across OS/mobile platforms.
+   - Conflict Resolution: Implement "Last-Write-Wins" or Operational Transformation (OT) for data sync.
+
+2. Competitive Programming Data Scraping & APIs
+   - Leverage Existing APIs: Use community-maintained endpoints like Codeforces API and LeetCode GraphQL endpoints to avoid ToS violations and broken scrapers.
+   - Browser Extensions for Seamless Logging: Build a Chrome/Firefox extension to detect "Submit" clicks and send problem data locally.
+
+3. The Local Code Execution Sandbox
+   - Native Compiler Triggers: Invoke the local system's compiler (e.g., g++ for C++) via background terminal child processes.
+   - Strict Timeout Controls: Implement hard execution timeouts to prevent accidental infinite loops.
+   - Memory Parsing: Read system process stats to capture peak memory usage and flag potential MLE issues.
+
+4. Spaced Repetition Logic (The Strategy Engine)
+   - Adapt the SM-2 Algorithm: Modify algorithms like SuperMemo-2 to factor in Problem Difficulty and Time Taken.
+   - Tag-Based Decay: Track mastery at the tag level (e.g., Dynamic Programming) to trigger review intervals for all related problems.
+
+5. Developer-Centric UI/UX
+   - Keyboard-First Navigation: Ensure major actions can be executed via customizable hotkeys for speed.
+   - Monaco Editor Integration: Embed a code viewer/editor using the Monaco Editor core for native syntax highlighting and auto-completion.
