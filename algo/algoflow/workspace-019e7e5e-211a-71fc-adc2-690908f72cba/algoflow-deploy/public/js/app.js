@@ -32,18 +32,104 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
-// ─── Tabs ───────────────────────────────────────────────────────────────────
+// ─── Navigator (sidebar nav) ─────────────────────────────────────────────────
+
+const VIEW_TITLES = {
+  arena: "Arena",
+  review: "Dashboard",
+  templates: "Template Vault",
+  problems: "Imported Problems",
+  settings: "Settings",
+};
 
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     tab.classList.add("active");
-    document.getElementById(`panel-${tab.dataset.panel}`).classList.add("active");
-    if (tab.dataset.panel === "templates") loadTemplates();
-    if (tab.dataset.panel === "review") loadReview();
+    const panel = tab.dataset.panel;
+    document.getElementById(`panel-${panel}`).classList.add("active");
+    const titleEl = document.getElementById("view-title");
+    if (titleEl) titleEl.textContent = VIEW_TITLES[panel] || panel;
+    if (panel === "templates") loadTemplates();
+    if (panel === "review") loadReview();
+    if (panel === "arena" && monacoEditor) setTimeout(() => monacoEditor.layout(), 50);
   });
 });
+
+// ─── Sidebar collapse (Ctrl+B) ───────────────────────────────────────────────
+
+const navEl = document.getElementById("navigator");
+function setNavCollapsed(collapsed) {
+  navEl.classList.toggle("collapsed", collapsed);
+  localStorage.setItem("algoflow_nav_collapsed", collapsed ? "1" : "0");
+  if (monacoEditor) setTimeout(() => monacoEditor.layout(), 200);
+}
+if (localStorage.getItem("algoflow_nav_collapsed") === "1") navEl.classList.add("collapsed");
+document.getElementById("nav-collapse").addEventListener("click", () =>
+  setNavCollapsed(!navEl.classList.contains("collapsed"))
+);
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) {
+    e.preventDefault();
+    setNavCollapsed(!navEl.classList.contains("collapsed"));
+  }
+});
+
+// ─── Profiler readouts + verdict badge ───────────────────────────────────────
+
+const VERDICTS = {
+  AC: { cls: "ac", label: "Accepted" },
+  TLE: { cls: "tle", label: "Time Limit" },
+  MLE: { cls: "mle", label: "Memory Limit" },
+  RE: { cls: "err", label: "Runtime Error" },
+  CE: { cls: "err", label: "Compile Error" },
+};
+
+function setVerdict(cls, label) {
+  const b = document.getElementById("verdict-badge");
+  if (!b) return;
+  b.className = "verdict-badge " + cls;
+  b.textContent = label;
+}
+
+function fmtMem(kb) {
+  if (kb == null) return "—";
+  return kb >= 1024 ? (kb / 1024).toFixed(1) + " MB" : kb + " KB";
+}
+
+function applyRunResult(result) {
+  const v = VERDICTS[result.overall_status] || { cls: "err", label: result.overall_status || "Done" };
+  setVerdict(v.cls, v.label);
+  const s = result.summary || {};
+  const timeEl = document.getElementById("ro-time");
+  const memEl = document.getElementById("ro-mem");
+  if (timeEl && s.total_time_ms != null) {
+    timeEl.textContent = s.total_time_ms + " ms";
+    timeEl.className = "readout-value" + (result.overall_status === "TLE" ? " crimson" : "");
+  }
+  if (memEl && s.peak_memory_kb != null) {
+    memEl.textContent = fmtMem(s.peak_memory_kb);
+    memEl.className = "readout-value" + (result.overall_status === "MLE" ? " amber" : "");
+  }
+}
+
+function applyProfileResult(result) {
+  const bigo = document.getElementById("ro-bigo");
+  if (bigo) {
+    bigo.textContent = result.overall || result.time || "—";
+    bigo.className = "readout-value green";
+  }
+  const memKb = result.empirical && result.empirical.peak_memory_kb;
+  const memEl = document.getElementById("ro-mem");
+  if (memEl && memKb) memEl.textContent = fmtMem(memKb);
+}
+
+function updateProfileChip() {
+  const sel = document.getElementById("user-select");
+  const chip = document.getElementById("profile-chip");
+  if (sel && chip && sel.selectedOptions[0]) chip.textContent = sel.selectedOptions[0].textContent;
+}
 
 // ─── Users ────────────────────────────────────────────────────────────────
 
@@ -53,11 +139,13 @@ async function loadUsers() {
   sel.innerHTML = data.users
     .map((u) => `<option value="${u.id}" ${String(u.id) === userId ? "selected" : ""}>${escapeHtml(u.name)}</option>`)
     .join("");
+  updateProfileChip();
 }
 
 document.getElementById("user-select").addEventListener("change", (e) => {
   userId = e.target.value;
   localStorage.setItem("algoflow_user_id", userId);
+  updateProfileChip();
   loadReview();
   loadProblems();
   loadTemplates();
@@ -209,6 +297,7 @@ int main() {
 
 document.getElementById("run-btn").addEventListener("click", async () => {
   const out = document.getElementById("run-output");
+  setVerdict("running", "Running…");
   out.textContent = "Running…";
   try {
     const test_cases = JSON.parse(document.getElementById("tests").value || "[]");
@@ -221,8 +310,10 @@ document.getElementById("run-btn").addEventListener("click", async () => {
       }),
     });
     out.textContent = JSON.stringify(result, null, 2);
+    applyRunResult(result);
   } catch (e) {
     out.textContent = "Error: " + e.message;
+    setVerdict("err", "Error");
   }
 });
 
@@ -249,6 +340,7 @@ document.getElementById("profile-btn").addEventListener("click", async () => {
       "",
       JSON.stringify({ static: result.static, empirical: result.empirical }, null, 2),
     ].join("\n");
+    applyProfileResult(result);
   } catch (e) {
     out.textContent = "Error: " + e.message;
   }
@@ -287,7 +379,7 @@ async function loadTemplates() {
       const t = data.templates.find((x) => x.id === parseInt(btn.dataset.id, 10));
       if (t && monacoEditor) {
         monacoEditor.setValue(t.body);
-        document.querySelector('.tab[data-panel="sandbox"]').click();
+        document.querySelector('.tab[data-panel="arena"]').click();
         document.getElementById("lang").value = t.language;
         monaco.editor.setModelLanguage(
           monacoEditor.getModel(),
