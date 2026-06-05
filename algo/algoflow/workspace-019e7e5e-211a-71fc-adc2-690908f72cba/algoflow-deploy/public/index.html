@@ -3,107 +3,207 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AlgoFlow</title>
+  <title>AlgoFlow — Focus Mode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/app.css" />
 </head>
 <body>
-  <header>
-    <h1>AlgoFlow</h1>
-    <div class="header-right">
-      <label>Profile
-        <select id="user-select"></select>
-      </label>
-      <button class="btn secondary small" id="add-user-btn">+ Profile</button>
-      <nav>
-        <a href="/whiteboard.html">Whiteboard</a>
-        <a href="/health" target="_blank">Health</a>
+  <div class="app-shell">
+
+    <!-- ─── Left Sidebar: The Navigator ─────────────────────────────── -->
+    <aside class="navigator" id="navigator">
+      <div class="nav-brand">
+        <span class="brand-mark">AF</span>
+        <span class="brand-text">AlgoFlow</span>
+      </div>
+
+      <nav class="nav-items">
+        <button class="nav-item tab active" data-panel="arena" title="Arena (code)">
+          <span class="nav-icon" aria-hidden="true">&#x2039;&#x2f;&#x203a;</span>
+          <span class="nav-label">Arena</span>
+        </button>
+        <button class="nav-item tab" data-panel="review" title="Spaced Repetition Queue">
+          <span class="nav-icon" aria-hidden="true">&#x21bb;</span>
+          <span class="nav-label">Dashboard</span>
+        </button>
+        <button class="nav-item tab" data-panel="templates" title="Template Vault">
+          <span class="nav-icon" aria-hidden="true">&#x2632;</span>
+          <span class="nav-label">Templates</span>
+        </button>
+        <button class="nav-item tab" data-panel="problems" title="Imported Problems">
+          <span class="nav-icon" aria-hidden="true">&#x2630;</span>
+          <span class="nav-label">Problems</span>
+        </button>
+        <button class="nav-item tab" data-panel="settings" title="Settings">
+          <span class="nav-icon" aria-hidden="true">&#x2699;</span>
+          <span class="nav-label">Settings</span>
+        </button>
       </nav>
-    </div>
-  </header>
 
-  <div class="tabs">
-    <button class="tab active" data-panel="review">Review</button>
-    <button class="tab" data-panel="sandbox">Sandbox</button>
-    <button class="tab" data-panel="templates">Templates</button>
-    <button class="tab" data-panel="problems">Problems</button>
-  </div>
+      <button class="nav-collapse" id="nav-collapse" title="Collapse (Ctrl+B)">
+        <span class="nav-icon collapse-icon" aria-hidden="true">&#x00ab;</span>
+        <span class="nav-label">Collapse</span>
+      </button>
+    </aside>
 
-  <section id="panel-review" class="panel active">
-    <div class="grid">
-      <div class="card">
-        <h2>Review queue</h2>
-        <div class="stats-row" id="review-stats"></div>
-        <h2 class="text-muted mt-sm">7-day forecast</h2>
-        <div class="forecast-bar" id="forecast-chart"></div>
-        <div id="review-list" class="mt-md"></div>
-        <button class="btn secondary mt-md" id="refresh-review">Refresh</button>
-      </div>
-      <div class="card">
-        <h2>Active review</h2>
-        <p class="hint">Select a problem from the queue, then rate your recall (SM-2).</p>
-        <div id="review-focus" class="review-focus hidden">
-          <div id="review-focus-body"></div>
-          <div class="rating-row" id="rating-row"></div>
+    <!-- ─── Main workspace ──────────────────────────────────────────── -->
+    <main class="workspace">
+      <header class="topbar">
+        <h1 class="view-title" id="view-title">Arena</h1>
+        <div class="topbar-right">
+          <span class="profile-chip" id="profile-chip">Default</span>
+          <span class="sync-indicator" id="sync-indicator" title="Whiteboard sync">
+            <span class="sync-dot"></span>
+            <span class="sync-text">Bridge</span>
+          </span>
         </div>
-        <p id="review-focus-hint" class="hint">Click a problem to start reviewing.</p>
-      </div>
-    </div>
-  </section>
+      </header>
 
-  <section id="panel-sandbox" class="panel">
-    <div class="card">
-      <h2>Code sandbox</h2>
-      <p class="hint">Monaco editor · Run tests · Profile complexity (static + optional benchmark runs).</p>
-      <select id="lang" aria-label="Programming language">
-        <option value="cpp">C++</option>
-        <option value="python">Python</option>
-        <option value="java">Java</option>
-      </select>
-      <div id="editor"></div>
-      <textarea id="tests" class="json-area" rows="4" placeholder='[{"input":"5\n","expected_output":""}]'>[{"input":"10\n","expected_output":""},{"input":"100\n","expected_output":""},{"input":"500\n","expected_output":""}]</textarea>
-      <button class="btn" id="run-btn">Run tests</button>
-      <button class="btn secondary" id="profile-btn">Profile complexity</button>
-      <button class="btn secondary" id="save-editor-as-tpl">Save as template</button>
-      <pre id="run-output"></pre>
-      <pre id="profiler-output"></pre>
-    </div>
-  </section>
+      <!-- ── ARENA: split-screen editor + complexity profiler + whiteboard PiP ── -->
+      <section id="panel-arena" class="panel active arena">
+        <div class="arena-main">
+          <!-- Top half: Monaco editor -->
+          <div class="arena-editor">
+            <div class="arena-toolbar">
+              <select id="lang" aria-label="Programming language">
+                <option value="cpp">C++</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+              </select>
+              <div class="toolbar-spacer"></div>
+              <button class="btn" id="run-btn">&#x25B6; Run</button>
+              <button class="btn secondary" id="profile-btn">Profile</button>
+              <button class="btn secondary" id="save-editor-as-tpl">Save as template</button>
+            </div>
+            <div id="editor"></div>
+          </div>
 
-  <section id="panel-templates" class="panel">
-    <div class="grid">
-      <div class="card">
-        <h2>Template vault</h2>
-        <input type="text" id="template-search" class="w-full mb-sm" placeholder="Search name, tags, code…" />
-        <select id="template-lang-filter" aria-label="Filter templates by language">
-          <option value="">All languages</option>
-          <option value="cpp">C++</option>
-          <option value="python">Python</option>
-          <option value="java">Java</option>
-        </select>
-        <div id="template-list"></div>
-      </div>
-      <div class="card">
-        <h2>New template</h2>
-        <input type="text" id="new-tpl-name" class="w-full mb-sm" placeholder="Name" />
-        <select id="new-tpl-lang" aria-label="Template language">
-          <option value="cpp">C++</option>
-          <option value="python">Python</option>
-          <option value="java">Java</option>
-        </select>
-        <input type="text" id="new-tpl-tags" class="w-full mb-sm" placeholder="tags: io, graphs, dp" />
-        <textarea id="new-tpl-body" class="json-area" rows="12" placeholder="Template source…"></textarea>
-        <button class="btn" id="save-template-btn">Save template</button>
-      </div>
-    </div>
-  </section>
+          <!-- Bottom half: Complexity Profiler terminal -->
+          <div class="arena-profiler">
+            <div class="profiler-head">
+              <span class="profiler-title">Complexity Profiler</span>
+              <span class="verdict-badge" id="verdict-badge">Idle</span>
+            </div>
 
-  <section id="panel-problems" class="panel">
-    <div class="card">
-      <h2>Imported problems</h2>
-      <p class="hint">Synced from the Chrome extension into spaced repetition.</p>
-      <ul id="problem-list" class="list-plain"></ul>
-    </div>
-  </section>
+            <div class="readouts">
+              <div class="readout">
+                <span class="readout-label">Big-O · time</span>
+                <span class="readout-value" id="ro-bigo">&mdash;</span>
+              </div>
+              <div class="readout">
+                <span class="readout-label">Exec time</span>
+                <span class="readout-value" id="ro-time">&mdash;</span>
+              </div>
+              <div class="readout">
+                <span class="readout-label">Peak memory</span>
+                <span class="readout-value" id="ro-mem">&mdash;</span>
+              </div>
+            </div>
+
+            <div class="profiler-io">
+              <label class="io-label">Test cases (JSON)</label>
+              <textarea id="tests" class="json-area" rows="3" placeholder='[{"input":"5\n","expected_output":""}]'>[{"input":"10\n","expected_output":""},{"input":"100\n","expected_output":""},{"input":"500\n","expected_output":""}]</textarea>
+              <pre id="run-output" class="terminal-out"></pre>
+              <pre id="profiler-output" class="terminal-out"></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right pane: The Bridge (whiteboard Picture-in-Picture) -->
+        <aside class="bridge">
+          <div class="bridge-head">
+            <span>Bridge &middot; Whiteboard</span>
+            <span class="sync-dot small" id="bridge-dot" title="Live feed"></span>
+          </div>
+          <div class="pip" id="pip">
+            <iframe id="wb-pip" src="/whiteboard.html?room=default" title="Whiteboard live feed" loading="lazy"></iframe>
+            <div class="pip-overlay" id="pip-overlay" title="Read-only mirror — open full whiteboard to draw"></div>
+          </div>
+          <a class="bridge-open" href="/whiteboard.html?room=default" target="_blank">Open full whiteboard &#x2197;</a>
+        </aside>
+      </section>
+
+      <!-- ── DASHBOARD / Spaced Repetition Queue ── -->
+      <section id="panel-review" class="panel">
+        <div class="grid">
+          <div class="card">
+            <h2>Review queue</h2>
+            <div class="stats-row" id="review-stats"></div>
+            <h2 class="text-muted mt-sm">7-day forecast</h2>
+            <div class="forecast-bar" id="forecast-chart"></div>
+            <div id="review-list" class="mt-md"></div>
+            <button class="btn secondary mt-md" id="refresh-review">Refresh</button>
+          </div>
+          <div class="card">
+            <h2>Active review</h2>
+            <p class="hint">Select a problem from the queue, then rate your recall (SM-2).</p>
+            <div id="review-focus" class="review-focus hidden">
+              <div id="review-focus-body"></div>
+              <div class="rating-row" id="rating-row"></div>
+            </div>
+            <p id="review-focus-hint" class="hint">Click a problem to start reviewing.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── TEMPLATE VAULT ── -->
+      <section id="panel-templates" class="panel">
+        <div class="grid">
+          <div class="card">
+            <h2>Template vault</h2>
+            <input type="text" id="template-search" class="w-full mb-sm" placeholder="Search name, tags, code…" />
+            <select id="template-lang-filter" aria-label="Filter templates by language">
+              <option value="">All languages</option>
+              <option value="cpp">C++</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+            </select>
+            <div id="template-list"></div>
+          </div>
+          <div class="card">
+            <h2>New template</h2>
+            <input type="text" id="new-tpl-name" class="w-full mb-sm" placeholder="Name" />
+            <select id="new-tpl-lang" aria-label="Template language">
+              <option value="cpp">C++</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+            </select>
+            <input type="text" id="new-tpl-tags" class="w-full mb-sm" placeholder="tags: io, graphs, dp" />
+            <textarea id="new-tpl-body" class="json-area" rows="12" placeholder="Template source…"></textarea>
+            <button class="btn" id="save-template-btn">Save template</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── PROBLEMS ── -->
+      <section id="panel-problems" class="panel">
+        <div class="card">
+          <h2>Imported problems</h2>
+          <p class="hint">Synced from the Chrome extension into spaced repetition.</p>
+          <ul id="problem-list" class="list-plain"></ul>
+        </div>
+      </section>
+
+      <!-- ── SETTINGS ── -->
+      <section id="panel-settings" class="panel">
+        <div class="card settings-card">
+          <h2>Profile</h2>
+          <p class="hint">Switch the active profile used for review, templates and problems.</p>
+          <div class="settings-row">
+            <select id="user-select"></select>
+            <button class="btn secondary small" id="add-user-btn">+ Profile</button>
+          </div>
+          <h2 class="mt-md">Links</h2>
+          <div class="settings-links">
+            <a href="/whiteboard.html?room=default" target="_blank">Open whiteboard &#x2197;</a>
+            <a href="/health" target="_blank">Server health &#x2197;</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   <script src="/js/app.js"></script>
